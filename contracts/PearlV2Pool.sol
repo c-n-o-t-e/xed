@@ -1,33 +1,33 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.7.6;
+pragma solidity 0.8.20;
 
-import './interfaces/IPearlV2Pool.sol';
-import './interfaces/IPearlV2PoolFactory.sol';
-import './interfaces/IGaugeV2.sol';
+import "./interfaces/IPearlV2Pool.sol";
+import "./interfaces/IPearlV2PoolFactory.sol";
+import "./interfaces/IGaugeV2.sol";
 
-import '@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol';
-import '@uniswap/v3-core/contracts/libraries/SafeCast.sol';
-import '@uniswap/v3-core/contracts/libraries/Tick.sol';
-import '@uniswap/v3-core/contracts/libraries/TickBitmap.sol';
-import '@uniswap/v3-core/contracts/libraries/Position.sol';
-import '@uniswap/v3-core/contracts/libraries/Oracle.sol';
+import "@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol";
+import "@uniswap/v3-core/contracts/libraries/SafeCast.sol";
+import "@uniswap/v3-core/contracts/libraries/Tick.sol";
+import "@uniswap/v3-core/contracts/libraries/TickBitmap.sol";
+import "@uniswap/v3-core/contracts/libraries/Position.sol";
+import "@uniswap/v3-core/contracts/libraries/Oracle.sol";
 
-import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
-import '@uniswap/v3-core/contracts/libraries/FixedPoint128.sol';
-import '@uniswap/v3-core/contracts/libraries/TransferHelper.sol';
-import '@uniswap/v3-core/contracts/libraries/TickMath.sol';
-import '@uniswap/v3-core/contracts/libraries/LiquidityMath.sol';
+import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
+import "@uniswap/v3-core/contracts/libraries/FixedPoint128.sol";
+import "@uniswap/v3-core/contracts/libraries/TransferHelper.sol";
+import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
+import "@uniswap/v3-core/contracts/libraries/LiquidityMath.sol";
 
-import '@uniswap/v3-core/contracts/interfaces/IUniswapV3PoolDeployer.sol';
-import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol';
-import '@uniswap/v3-core/contracts/interfaces/IERC20Minimal.sol';
-import '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3MintCallback.sol';
-import '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';
-import '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3FlashCallback.sol';
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3PoolDeployer.sol";
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
+import "@uniswap/v3-core/contracts/interfaces/IERC20Minimal.sol";
+import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3MintCallback.sol";
+import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol";
+import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3FlashCallback.sol";
 
-import './libraries/SqrtPriceMathV2.sol';
-import './libraries/SwapMathV2.sol';
-import './libraries/LiquidityAmountsV2.sol';
+import "./libraries/SqrtPriceMathV2.sol";
+import "./libraries/SwapMathV2.sol";
+import "./libraries/LiquidityAmountsV2.sol";
 
 contract PearlV2Pool is IPearlV2Pool {
     using LowGasSafeMath for uint256;
@@ -73,6 +73,7 @@ contract PearlV2Pool is IPearlV2Pool {
         bool unlocked;
     }
     /// @inheritdoc IUniswapV3PoolState
+
     Slot0 public override slot0;
 
     /// @inheritdoc IUniswapV3PoolState
@@ -123,7 +124,7 @@ contract PearlV2Pool is IPearlV2Pool {
     /// to a function before the pool is initialized. The reentrancy guard is required throughout the contract because
     /// we use balance checks to determine the payment status of interactions such as mint, swap and flash.
     modifier lock() {
-        require(slot0.unlocked, 'LOK');
+        require(slot0.unlocked, "LOK");
         slot0.unlocked = false;
         _;
         slot0.unlocked = true;
@@ -147,7 +148,7 @@ contract PearlV2Pool is IPearlV2Pool {
 
     /// @inheritdoc IPearlV2Pool
     function setup() external override {
-        require(factory == address(0), 'NA');
+        require(factory == address(0), "NA");
         int24 _tickSpacing;
         (factory, token0, token1, fee, _tickSpacing) = IPearlV2PoolFactory(msg.sender).parameters();
         tickSpacing = _tickSpacing;
@@ -156,9 +157,9 @@ contract PearlV2Pool is IPearlV2Pool {
 
     /// @dev Common checks for valid tick inputs.
     function checkTicks(int24 tickLower, int24 tickUpper) private pure {
-        require(tickLower < tickUpper, 'TLU');
-        require(tickLower >= TickMath.MIN_TICK, 'TLM');
-        require(tickUpper <= TickMath.MAX_TICK, 'TUM');
+        require(tickLower < tickUpper, "TLU");
+        require(tickLower >= TickMath.MIN_TICK, "TLM");
+        require(tickUpper <= TickMath.MAX_TICK, "TUM");
     }
 
     function _checkFactoryOwner() internal view {
@@ -166,11 +167,11 @@ contract PearlV2Pool is IPearlV2Pool {
     }
 
     function _checkFactory() internal view {
-        require(msg.sender == factory, 'FA');
+        require(msg.sender == factory, "FA");
     }
 
     function _checkAmountSpecified(int256 amountSpecified) internal pure {
-        require(amountSpecified != 0, 'AS');
+        require(amountSpecified != 0, "AS");
     }
 
     /// @dev Returns the block timestamp truncated to 32 bits, i.e. mod 2**32. This method is overridden in tests.
@@ -182,9 +183,8 @@ contract PearlV2Pool is IPearlV2Pool {
     /// @dev This function is gas optimized to avoid a redundant extcodesize check in addition to the returndatasize
     /// check
     function balance0() private view returns (uint256) {
-        (bool success, bytes memory data) = token0.staticcall(
-            abi.encodeWithSelector(IERC20Minimal.balanceOf.selector, address(this))
-        );
+        (bool success, bytes memory data) =
+            token0.staticcall(abi.encodeWithSelector(IERC20Minimal.balanceOf.selector, address(this)));
         require(success && data.length >= 32);
         return abi.decode(data, (uint256));
     }
@@ -193,18 +193,14 @@ contract PearlV2Pool is IPearlV2Pool {
     /// @dev This function is gas optimized to avoid a redundant extcodesize check in addition to the returndatasize
     /// check
     function balance1() private view returns (uint256) {
-        (bool success, bytes memory data) = token1.staticcall(
-            abi.encodeWithSelector(IERC20Minimal.balanceOf.selector, address(this))
-        );
+        (bool success, bytes memory data) =
+            token1.staticcall(abi.encodeWithSelector(IERC20Minimal.balanceOf.selector, address(this)));
         require(success && data.length >= 32);
         return abi.decode(data, (uint256));
     }
 
     /// @inheritdoc IUniswapV3PoolDerivedState
-    function snapshotCumulativesInside(
-        int24 tickLower,
-        int24 tickUpper
-    )
+    function snapshotCumulativesInside(int24 tickLower, int24 tickUpper)
         external
         view
         override
@@ -252,18 +248,12 @@ contract PearlV2Pool is IPearlV2Pool {
         } else if (_slot0.tick < tickUpper) {
             uint32 time = _blockTimestamp();
             (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) = observations.observeSingle(
-                time,
-                0,
-                _slot0.tick,
-                _slot0.observationIndex,
-                liquidity,
-                _slot0.observationCardinality
+                time, 0, _slot0.tick, _slot0.observationIndex, liquidity, _slot0.observationCardinality
             );
             return (
                 tickCumulative - tickCumulativeLower - tickCumulativeUpper,
-                secondsPerLiquidityCumulativeX128 -
-                    secondsPerLiquidityOutsideLowerX128 -
-                    secondsPerLiquidityOutsideUpperX128,
+                secondsPerLiquidityCumulativeX128 - secondsPerLiquidityOutsideLowerX128
+                    - secondsPerLiquidityOutsideUpperX128,
                 time - secondsOutsideLower - secondsOutsideUpper
             );
         } else {
@@ -276,41 +266,32 @@ contract PearlV2Pool is IPearlV2Pool {
     }
 
     /// @inheritdoc IUniswapV3PoolDerivedState
-    function observe(
-        uint32[] calldata secondsAgos
-    )
+    function observe(uint32[] calldata secondsAgos)
         external
         view
         override
         returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s)
     {
-        return
-            observations.observe(
-                _blockTimestamp(),
-                secondsAgos,
-                slot0.tick,
-                slot0.observationIndex,
-                liquidity,
-                slot0.observationCardinality
-            );
+        return observations.observe(
+            _blockTimestamp(), secondsAgos, slot0.tick, slot0.observationIndex, liquidity, slot0.observationCardinality
+        );
     }
 
     /// @inheritdoc IUniswapV3PoolActions
     function increaseObservationCardinalityNext(uint16 observationCardinalityNext) external override lock {
         uint16 observationCardinalityNextOld = slot0.observationCardinalityNext; // for the event
-        uint16 observationCardinalityNextNew = observations.grow(
-            observationCardinalityNextOld,
-            observationCardinalityNext
-        );
+        uint16 observationCardinalityNextNew =
+            observations.grow(observationCardinalityNextOld, observationCardinalityNext);
         slot0.observationCardinalityNext = observationCardinalityNextNew;
-        if (observationCardinalityNextOld != observationCardinalityNextNew)
+        if (observationCardinalityNextOld != observationCardinalityNextNew) {
             emit IncreaseObservationCardinalityNext(observationCardinalityNextOld, observationCardinalityNextNew);
+        }
     }
 
     /// @inheritdoc IUniswapV3PoolActions
     /// @dev not locked because it initializes unlocked
     function initialize(uint160 sqrtPriceX96) external override onlyFactory {
-        require(slot0.sqrtPriceX96 == 0, 'AI');
+        require(slot0.sqrtPriceX96 == 0, "AI");
 
         int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
 
@@ -347,31 +328,22 @@ contract PearlV2Pool is IPearlV2Pool {
     /// @return position a storage pointer referencing the position with the given owner and tick range
     /// @return amount0 the amount of token0 owed to the pool, negative if the pool should pay the recipient
     /// @return amount1 the amount of token1 owed to the pool, negative if the pool should pay the recipient
-    function _modifyPosition(
-        ModifyPositionParams memory params
-    ) private returns (Position.Info storage position, int256 amount0, int256 amount1) {
+    function _modifyPosition(ModifyPositionParams memory params)
+        private
+        returns (Position.Info storage position, int256 amount0, int256 amount1)
+    {
         checkTicks(params.tickLower, params.tickUpper);
 
         Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
 
-        position = _updatePosition(
-            params.owner,
-            params.tickLower,
-            params.tickUpper,
-            params.liquidityDelta,
-            _slot0.tick
-        );
+        position = _updatePosition(params.owner, params.tickLower, params.tickUpper, params.liquidityDelta, _slot0.tick);
 
         if (params.liquidityDelta != 0) {
             // Amounts are only calculated when liquidity is removed from the pool,
             // as they are pre-calculated during minting.
             if (params.liquidityDelta < 0) {
-                (amount0, amount1, params.isInRange) = getAmountsForLiquidity(
-                    params.tickLower,
-                    params.tickUpper,
-                    params.liquidityDelta,
-                    _slot0
-                );
+                (amount0, amount1, params.isInRange) =
+                    getAmountsForLiquidity(params.tickLower, params.tickUpper, params.liquidityDelta, _slot0);
             }
 
             // isInRange = (tickLower >= _slot0.tick < tickUpper)
@@ -387,6 +359,7 @@ contract PearlV2Pool is IPearlV2Pool {
                     _slot0.observationCardinality,
                     _slot0.observationCardinalityNext
                 );
+
                 liquidity = LiquidityMath.addDelta(liquidityBefore, params.liquidityDelta);
             }
         }
@@ -397,13 +370,10 @@ contract PearlV2Pool is IPearlV2Pool {
     /// @param tickLower the lower tick of the position's tick range
     /// @param tickUpper the upper tick of the position's tick range
     /// @param tick the current tick, passed to avoid sloads
-    function _updatePosition(
-        address owner,
-        int24 tickLower,
-        int24 tickUpper,
-        int128 liquidityDelta,
-        int24 tick
-    ) private returns (Position.Info storage position) {
+    function _updatePosition(address owner, int24 tickLower, int24 tickUpper, int128 liquidityDelta, int24 tick)
+        private
+        returns (Position.Info storage position)
+    {
         position = positions.get(owner, tickLower, tickUpper);
 
         uint256 _feeGrowthGlobal0X128 = feeGrowthGlobal0X128; // SLOAD for gas optimization
@@ -415,12 +385,7 @@ contract PearlV2Pool is IPearlV2Pool {
         if (liquidityDelta != 0) {
             uint32 time = _blockTimestamp();
             (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) = observations.observeSingle(
-                time,
-                0,
-                slot0.tick,
-                slot0.observationIndex,
-                liquidity,
-                slot0.observationCardinality
+                time, 0, slot0.tick, slot0.observationIndex, liquidity, slot0.observationCardinality
             );
 
             flippedLower = ticks.update(
@@ -456,13 +421,8 @@ contract PearlV2Pool is IPearlV2Pool {
             }
         }
 
-        (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) = ticks.getFeeGrowthInside(
-            tickLower,
-            tickUpper,
-            tick,
-            _feeGrowthGlobal0X128,
-            _feeGrowthGlobal1X128
-        );
+        (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
+            ticks.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobal0X128, _feeGrowthGlobal1X128);
 
         position.update(liquidityDelta, feeGrowthInside0X128, feeGrowthInside1X128);
 
@@ -499,21 +459,13 @@ contract PearlV2Pool is IPearlV2Pool {
         checkTicks(tickLower, tickUpper);
 
         Slot0 memory _slot0 = slot0;
-        MintCache memory cache = MintCache({
-            receivedAmount0: 0,
-            receivedAmount1: 0,
-            sqrtPriceX96: _slot0.sqrtPriceX96,
-            isInRange: false
-        });
+        MintCache memory cache =
+            MintCache({receivedAmount0: 0, receivedAmount1: 0, sqrtPriceX96: _slot0.sqrtPriceX96, isInRange: false});
 
         int256 amount0Int;
         int256 amount1Int;
-        (amount0Int, amount1Int, cache.isInRange) = getAmountsForLiquidity(
-            tickLower,
-            tickUpper,
-            int256(amount).toInt128(),
-            _slot0
-        );
+        (amount0Int, amount1Int, cache.isInRange) =
+            getAmountsForLiquidity(tickLower, tickUpper, int256(uint256(amount)).toInt128(), _slot0);
 
         amount0 = uint256(amount0Int);
         amount1 = uint256(amount1Int);
@@ -541,7 +493,7 @@ contract PearlV2Pool is IPearlV2Pool {
                     owner: recipient,
                     tickLower: tickLower,
                     tickUpper: tickUpper,
-                    liquidityDelta: int256(actualLiquidity).toInt128(),
+                    liquidityDelta: int256(uint256(actualLiquidity)).toInt128(),
                     isInRange: cache.isInRange
                 })
             );
@@ -552,16 +504,20 @@ contract PearlV2Pool is IPearlV2Pool {
 
         if (amount0 > 0) {
             // return the left over
-            if (cache.receivedAmount0 > amount0)
+            if (cache.receivedAmount0 > amount0) {
                 TransferHelper.safeTransfer(token0, sender, cache.receivedAmount0 - amount0);
-            else if (cache.receivedAmount0 != amount0) revert('M0');
+            } else if (cache.receivedAmount0 != amount0) {
+                revert("M0");
+            }
         }
 
         if (amount1 > 0) {
             // return the left over
-            if (cache.receivedAmount1 > amount1)
+            if (cache.receivedAmount1 > amount1) {
                 TransferHelper.safeTransfer(token0, sender, cache.receivedAmount1 - amount1);
-            else if (cache.receivedAmount1 != amount1) revert('M1');
+            } else if (cache.receivedAmount1 != amount1) {
+                revert("M1");
+            }
         }
 
         //sync reserves
@@ -603,19 +559,21 @@ contract PearlV2Pool is IPearlV2Pool {
 
     /// @inheritdoc IUniswapV3PoolActions
     /// @dev  is applied indirectly via _modifyPosition
-    function burn(
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 amount
-    ) external override lock returns (uint256 amount0, uint256 amount1) {
+    function burn(int24 tickLower, int24 tickUpper, uint128 amount)
+        external
+        override
+        lock
+        returns (uint256 amount0, uint256 amount1)
+    {
         //update reserves
         _updateReserves();
+
         (Position.Info storage position, int256 amount0Int, int256 amount1Int) = _modifyPosition(
             ModifyPositionParams({
                 owner: msg.sender,
                 tickLower: tickLower,
                 tickUpper: tickUpper,
-                liquidityDelta: -int256(amount).toInt128(),
+                liquidityDelta: -int256(uint256(amount)).toInt128(),
                 isInRange: false
             })
         );
@@ -624,10 +582,8 @@ contract PearlV2Pool is IPearlV2Pool {
         amount1 = uint256(-amount1Int);
 
         if (amount0 > 0 || amount1 > 0) {
-            (position.tokensOwed0, position.tokensOwed1) = (
-                position.tokensOwed0 + uint128(amount0),
-                position.tokensOwed1 + uint128(amount1)
-            );
+            (position.tokensOwed0, position.tokensOwed1) =
+                (position.tokensOwed0 + uint128(amount0), position.tokensOwed1 + uint128(amount1));
         }
 
         emit Burn(msg.sender, tickLower, tickUpper, amount, amount0, amount1);
@@ -693,12 +649,12 @@ contract PearlV2Pool is IPearlV2Pool {
     ) external override returns (int256 amount0, int256 amount1) {
         _checkAmountSpecified(amountSpecified);
         Slot0 memory slot0Start = slot0;
-        require(slot0Start.unlocked, 'LOK');
+        require(slot0Start.unlocked, "LOK");
         require(
             zeroForOne
                 ? sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO
                 : sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,
-            'SPL'
+            "SPL"
         );
 
         slot0.unlocked = false;
@@ -715,13 +671,13 @@ contract PearlV2Pool is IPearlV2Pool {
 
             uint256 balance0Before = balance0();
             IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);
-            require(balance0Before.add(uint256(amount0)) <= balance0(), 'IIA');
+            require(balance0Before.add(uint256(amount0)) <= balance0(), "IIA");
         } else {
             if (amount0 < 0) TransferHelper.safeTransfer(token0, recipient, uint256(-amount0));
 
             uint256 balance1Before = balance1();
             IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);
-            require(balance1Before.add(uint256(amount1)) <= balance1(), 'IIA');
+            require(balance1Before.add(uint256(amount1)) <= balance1(), "IIA");
         }
 
         //sync reserves
@@ -740,14 +696,14 @@ contract PearlV2Pool is IPearlV2Pool {
         uint160 sqrtPriceLimitX96,
         bytes calldata data
     ) external override returns (int256 amount0, int256 amount1) {
-        require(amountSpecified > 0, 'IN');
+        require(amountSpecified > 0, "IN");
         Slot0 memory slot0Start = slot0;
-        require(slot0Start.unlocked, 'LOK');
+        require(slot0Start.unlocked, "LOK");
         require(
             zeroForOne
                 ? sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO
                 : sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,
-            'SPL'
+            "SPL"
         );
 
         _checkAmountSpecified(amountSpecified);
@@ -783,12 +739,14 @@ contract PearlV2Pool is IPearlV2Pool {
         // do the transfers and return the leftovers
         if (zeroForOne) {
             if (amount1 < 0) TransferHelper.safeTransfer(token1, recipient, uint256(-amount1));
-            if (amount0 < amountSpecified)
+            if (amount0 < amountSpecified) {
                 TransferHelper.safeTransfer(token0, sender, uint256(amountSpecified - amount0));
+            }
         } else {
             if (amount0 < 0) TransferHelper.safeTransfer(token0, recipient, uint256(-amount0));
-            if (amount1 < amountSpecified)
+            if (amount1 < amountSpecified) {
                 TransferHelper.safeTransfer(token1, sender, uint256(amountSpecified - amount1));
+            }
         }
 
         //sync reserves
@@ -831,11 +789,8 @@ contract PearlV2Pool is IPearlV2Pool {
 
             step.sqrtPriceStartX96 = state.sqrtPriceX96;
 
-            (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(
-                state.tick,
-                tickSpacing,
-                zeroForOne
-            );
+            (step.tickNext, step.initialized) =
+                tickBitmap.nextInitializedTickWithinOneWord(state.tick, tickSpacing, zeroForOne);
 
             // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
             if (step.tickNext < TickMath.MIN_TICK) {
@@ -874,8 +829,9 @@ contract PearlV2Pool is IPearlV2Pool {
             }
 
             // update global fee tracker
-            if (state.liquidity > 0)
+            if (state.liquidity > 0) {
                 state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
+            }
 
             // shift tick if we reached the next price
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
@@ -932,12 +888,8 @@ contract PearlV2Pool is IPearlV2Pool {
                 slot0Start.observationCardinality,
                 slot0Start.observationCardinalityNext
             );
-            (slot0.sqrtPriceX96, slot0.tick, slot0.observationIndex, slot0.observationCardinality) = (
-                state.sqrtPriceX96,
-                state.tick,
-                observationIndex,
-                observationCardinality
-            );
+            (slot0.sqrtPriceX96, slot0.tick, slot0.observationIndex, slot0.observationCardinality) =
+                (state.sqrtPriceX96, state.tick, observationIndex, observationCardinality);
         } else {
             // otherwise just update the price
             slot0.sqrtPriceX96 = state.sqrtPriceX96;
@@ -964,7 +916,7 @@ contract PearlV2Pool is IPearlV2Pool {
     /// @inheritdoc IUniswapV3PoolActions
     function flash(address recipient, uint256 amount0, uint256 amount1, bytes calldata data) external override lock {
         uint128 _liquidity = liquidity;
-        require(_liquidity > 0, 'L');
+        require(_liquidity > 0, "L");
         uint256 fee0 = FullMath.mulDivRoundingUp(amount0, fee, 1e6);
         uint256 fee1 = FullMath.mulDivRoundingUp(amount1, fee, 1e6);
         //Update Reserves and get balance
@@ -974,8 +926,8 @@ contract PearlV2Pool is IPearlV2Pool {
         IUniswapV3FlashCallback(msg.sender).uniswapV3FlashCallback(fee0, fee1, data);
         uint256 balance0After = balance0();
         uint256 balance1After = balance1();
-        require(balance0Before.add(fee0) <= balance0After, 'F0');
-        require(balance1Before.add(fee1) <= balance1After, 'F1');
+        require(balance0Before.add(fee0) <= balance0After, "F0");
+        require(balance1Before.add(fee1) <= balance1After, "F1");
         // sub is safe because we know balanceAfter is gt balanceBefore by at least fee
         uint256 paid0 = balance0After - balance0Before;
         uint256 paid1 = balance1After - balance1Before;
@@ -1006,8 +958,8 @@ contract PearlV2Pool is IPearlV2Pool {
     /// @inheritdoc IUniswapV3PoolOwnerActions
     function setFeeProtocol(uint8 feeProtocol0, uint8 feeProtocol1) external override lock onlyFactoryOwner {
         require(
-            (feeProtocol0 == 0 || (feeProtocol0 >= 4 && feeProtocol0 <= 10)) &&
-                (feeProtocol1 == 0 || (feeProtocol1 >= 4 && feeProtocol1 <= 10))
+            (feeProtocol0 == 0 || (feeProtocol0 >= 4 && feeProtocol0 <= 10))
+                && (feeProtocol1 == 0 || (feeProtocol1 >= 4 && feeProtocol1 <= 10))
         );
         uint8 feeProtocolOld = slot0.feeProtocol;
         slot0.feeProtocol = feeProtocol0 + (feeProtocol1 << 4);
@@ -1015,11 +967,13 @@ contract PearlV2Pool is IPearlV2Pool {
     }
 
     /// @inheritdoc IUniswapV3PoolOwnerActions
-    function collectProtocol(
-        address recipient,
-        uint128 amount0Requested,
-        uint128 amount1Requested
-    ) external override lock onlyFactoryOwner returns (uint128 amount0, uint128 amount1) {
+    function collectProtocol(address recipient, uint128 amount0Requested, uint128 amount1Requested)
+        external
+        override
+        lock
+        onlyFactoryOwner
+        returns (uint128 amount0, uint128 amount1)
+    {
         amount0 = amount0Requested > protocolFees.token0 ? protocolFees.token0 : amount0Requested;
         amount1 = amount1Requested > protocolFees.token1 ? protocolFees.token1 : amount1Requested;
 
@@ -1071,7 +1025,7 @@ contract PearlV2Pool is IPearlV2Pool {
 
     /// @inheritdoc IPearlV2Pool
     function skim() external override lock {
-        require(IPearlV2PoolFactory(factory).isRebaseProxy(address(this), msg.sender), 'RP');
+        require(IPearlV2PoolFactory(factory).isRebaseProxy(address(this), msg.sender), "RP");
         _updateReserves();
         uint256 _token0;
         uint256 _token1;
@@ -1090,42 +1044,33 @@ contract PearlV2Pool is IPearlV2Pool {
         _syncReserves();
     }
 
-    function getAmountsForLiquidity(
-        int24 tickLower,
-        int24 tickUpper,
-        int128 liquidityDelta,
-        Slot0 memory _slot0
-    ) private pure returns (int256 amount0, int256 amount1, bool isInRange) {
+    function getAmountsForLiquidity(int24 tickLower, int24 tickUpper, int128 liquidityDelta, Slot0 memory _slot0)
+        private
+        pure
+        returns (int256 amount0, int256 amount1, bool isInRange)
+    {
         if (_slot0.tick < tickLower) {
             // current tick is below the passed range; liquidity can only become in range by crossing from left to
             // right, when we'll need _more_ token0 (it's becoming more valuable) so user must provide it
             amount0 = SqrtPriceMathV2.getAmount0Delta(
-                TickMath.getSqrtRatioAtTick(tickLower),
-                TickMath.getSqrtRatioAtTick(tickUpper),
-                liquidityDelta
+                TickMath.getSqrtRatioAtTick(tickLower), TickMath.getSqrtRatioAtTick(tickUpper), liquidityDelta
             );
         } else if (_slot0.tick < tickUpper) {
             isInRange = true;
 
             // current tick is inside the passed range
             amount0 = SqrtPriceMathV2.getAmount0Delta(
-                _slot0.sqrtPriceX96,
-                TickMath.getSqrtRatioAtTick(tickUpper),
-                liquidityDelta
+                _slot0.sqrtPriceX96, TickMath.getSqrtRatioAtTick(tickUpper), liquidityDelta
             );
 
             amount1 = SqrtPriceMathV2.getAmount1Delta(
-                TickMath.getSqrtRatioAtTick(tickLower),
-                _slot0.sqrtPriceX96,
-                liquidityDelta
+                TickMath.getSqrtRatioAtTick(tickLower), _slot0.sqrtPriceX96, liquidityDelta
             );
         } else {
             // current tick is above the passed range; liquidity can only become in range by crossing from right to
             // left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
             amount1 = SqrtPriceMathV2.getAmount1Delta(
-                TickMath.getSqrtRatioAtTick(tickLower),
-                TickMath.getSqrtRatioAtTick(tickUpper),
-                liquidityDelta
+                TickMath.getSqrtRatioAtTick(tickLower), TickMath.getSqrtRatioAtTick(tickUpper), liquidityDelta
             );
         }
     }

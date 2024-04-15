@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity =0.7.6;
+pragma solidity 0.8.20;
 
-import '@openzeppelin/contracts/access/AccessControl.sol';
-import '@openzeppelin/contracts/proxy/Clones.sol';
-import './interfaces/IPearlV2PoolFactory.sol';
-import './interfaces/IPearlV2Pool.sol';
-import './NoDelegateCall.sol';
+import "openzeppelin/contracts/access/AccessControl.sol";
+import "openzeppelin/contracts/proxy/Clones.sol";
+import "./interfaces/IPearlV2PoolFactory.sol";
+import "./interfaces/IPearlV2Pool.sol";
+import "./NoDelegateCall.sol";
 
 /// @title Canonical Uniswap V3 factory
 /// @notice Deploys PearlV2 pools and manages ownership and control over pool protocol fees
 contract PearlV2Factory is IPearlV2PoolFactory, AccessControl, NoDelegateCall {
     using Clones for address;
+
     struct Parameters {
         address factory;
         address token0;
@@ -19,13 +20,13 @@ contract PearlV2Factory is IPearlV2PoolFactory, AccessControl, NoDelegateCall {
         int24 tickSpacing;
     }
 
-    bytes32 public constant POOL_MANAGER = keccak256('POOL_MANAGER');
+    bytes32 public constant POOL_MANAGER = keccak256("POOL_MANAGER");
     // gauge manager role to set the gauge address in the pool
-    bytes32 public constant GAUGE_MANAGER = keccak256('GAUGE_MANAGER');
+    bytes32 public constant GAUGE_MANAGER = keccak256("GAUGE_MANAGER");
     // manager role to set the rebase proxy address in the pool
-    bytes32 public constant POOL_REBASE_PROXY_MANAGER = keccak256('POOL_REBASE_PROXY_MANAGER');
+    bytes32 public constant POOL_REBASE_PROXY_MANAGER = keccak256("POOL_REBASE_PROXY_MANAGER");
     // protocol owned rebase controller
-    bytes32 public constant ADMIN_REBASE_PROXY = keccak256('ADMIN_REBASE_PROXY');
+    bytes32 public constant ADMIN_REBASE_PROXY = keccak256("ADMIN_REBASE_PROXY");
 
     /// @inheritdoc IPearlV2PoolFactory
     Parameters public override parameters;
@@ -59,7 +60,7 @@ contract PearlV2Factory is IPearlV2PoolFactory, AccessControl, NoDelegateCall {
     event PoolRebaseProxyChanged(address indexed poolAddress, address oldProxyAddress, address newProxyAddress);
 
     constructor(address _initialOwner, address _poolImplementation) {
-        require(_initialOwner != address(0) || _poolImplementation != address(0), 'zero addr');
+        require(_initialOwner != address(0) || _poolImplementation != address(0), "zero addr");
 
         // setup admin and manager roles
         _setupRole(DEFAULT_ADMIN_ROLE, _initialOwner);
@@ -86,24 +87,25 @@ contract PearlV2Factory is IPearlV2PoolFactory, AccessControl, NoDelegateCall {
 
     /// @inheritdoc IPearlV2PoolFactory
     function setPoolRebaseProxy(address _pool, address _rebaseProxy) external override {
-        require(hasRole(POOL_REBASE_PROXY_MANAGER, msg.sender), '!proxyManager');
-        require(_pool != address(0) && _rebaseProxy != address(0), 'zero addr');
+        require(hasRole(POOL_REBASE_PROXY_MANAGER, msg.sender), "!proxyManager");
+        require(_pool != address(0) && _rebaseProxy != address(0), "zero addr");
         emit PoolRebaseProxyChanged(_pool, poolRebaseProxy[_pool], _rebaseProxy);
         poolRebaseProxy[_pool] = _rebaseProxy;
     }
 
     function setPoolImplementation(address _poolImplementation) external onlyOwner {
-        require(_poolImplementation != address(0), 'zero addr');
+        require(_poolImplementation != address(0), "zero addr");
         emit PoolImplementationChanged(poolImplementation, _poolImplementation);
         poolImplementation = _poolImplementation;
     }
 
     /// @inheritdoc IPearlV2PoolFactory
-    function createPool(
-        address tokenA,
-        address tokenB,
-        uint24 fee
-    ) external override noDelegateCall returns (address pool) {
+    function createPool(address tokenA, address tokenB, uint24 fee)
+        external
+        override
+        noDelegateCall
+        returns (address pool)
+    {
         require(tokenA != tokenB);
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         require(token0 != address(0));
@@ -126,13 +128,10 @@ contract PearlV2Factory is IPearlV2PoolFactory, AccessControl, NoDelegateCall {
     /// @param token1 The second token of the pool by address sort order
     /// @param fee The fee collected upon every swap in the pool, denominated in hundredths of a bip
     /// @param tickSpacing The spacing between usable ticks
-    function deploy(
-        address factory,
-        address token0,
-        address token1,
-        uint24 fee,
-        int24 tickSpacing
-    ) internal returns (address pool) {
+    function deploy(address factory, address token0, address token1, uint24 fee, int24 tickSpacing)
+        internal
+        returns (address pool)
+    {
         parameters = Parameters({factory: factory, token0: token0, token1: token1, fee: fee, tickSpacing: tickSpacing});
         bytes32 salt = keccak256(abi.encode(token0, token1, fee));
         pool = poolImplementation.cloneDeterministic(salt);
@@ -147,8 +146,8 @@ contract PearlV2Factory is IPearlV2PoolFactory, AccessControl, NoDelegateCall {
 
     /// @inheritdoc IPearlV2PoolFactory
     function setPoolGauge(address pool, address _gauge) external override {
-        require(hasRole(POOL_MANAGER, msg.sender) || hasRole(GAUGE_MANAGER, msg.sender), 'PearlV2Factory: !manager');
-        require(_gauge != address(0), 'PearlV2Factory: !gauge');
+        require(hasRole(POOL_MANAGER, msg.sender) || hasRole(GAUGE_MANAGER, msg.sender), "PearlV2Factory: !manager");
+        require(_gauge != address(0), "PearlV2Factory: !gauge");
         IPearlV2Pool(pool).setGauge(_gauge);
     }
 
